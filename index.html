@@ -53,14 +53,14 @@ iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:8px}
 <button id="addAccount">+ Add Google Account</button>
 </div>
 <p id="accountStatus" class="status" role="status"></p>
-<p class="small">Google Cloud Console mein Authorized JavaScript origins mein apni GitHub Pages site ka origin add karo. Client Secret yahan mat daalna.</p>
+<p class="small">Google Cloud Console ke Authorized JavaScript origins mein apni GitHub Pages site ka origin add karo. Client Secret yahan mat daalna.</p>
 </div>
 
 <div class="panel">
 <h2>My Accounts (<span id="accountCount">0</span>)</h2>
 <div id="accountList"></div>
 <button class="secondary" id="clearAccounts">Clear Dashboard</button>
-<p class="small">Email address browser mein save hota hai, password nahi.</p>
+<p class="small">Email browser mein save hota hai, password nahi.</p>
 </div>
 </section>
 
@@ -69,28 +69,19 @@ iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:8px}
 <h2>YouTube Multi-Screen Player</h2>
 <label for="videoUrl">YouTube Video URL</label>
 <input id="videoUrl" type="url" placeholder="https://www.youtube.com/watch?v=XXXXXXXXXXX">
-
 <label for="screenCount">Screen Count (1–12)</label>
 <input id="screenCount" type="number" min="1" max="12" value="2">
-
 <label style="display:flex;gap:8px;align-items:center">
 <input id="autoplay" type="checkbox" style="width:auto;margin:0">
 Autoplay try karein
 </label>
-
 <div class="row" style="margin-top:15px">
 <button id="createScreens">Create Screens</button>
 <button id="clearScreens" class="secondary">Clear Screens</button>
 </div>
-
 <p id="playerStatus" class="status" role="status"></p>
 <div id="screens" class="screens"></div>
-
-<p class="note">
-Saved emails har screen par automatically order mein assign honge.
-Ye sirf email labels hain; embedded YouTube players alag Google accounts mein login nahi hote.
-Autoplay browser block kar sakta hai.
-</p>
+<p class="note">Accounts screen par automatically order mein assign hote hain. Ye sirf email labels hain; isse har YouTube player alag Google account mein login nahi hota. Browser autoplay block kar sakta hai.</p>
 </div>
 </section>
 </main>
@@ -133,7 +124,7 @@ function renderAccounts() {
 
   if (!list.length) {
     const p = document.createElement("p");
-    p.textContent = "Abhi koi saved account nahi hai. Add Google Account dabao.";
+    p.textContent = "Koi saved account nahi hai. Upar Add Google Account dabao.";
     root.appendChild(p);
     return;
   }
@@ -141,19 +132,16 @@ function renderAccounts() {
   list.forEach((account, index) => {
     const row = document.createElement("div");
     row.className = "account";
-
     const info = document.createElement("div");
     const email = document.createElement("div");
     email.className = "email";
     email.textContent = account.email;
-
     const date = document.createElement("div");
     date.className = "small";
-    const parsedDate = new Date(account.addedAt || "");
-    date.textContent = account.addedAt && !isNaN(parsedDate)
-      ? "Added: " + parsedDate.toLocaleString()
+    const parsed = new Date(account.addedAt || "");
+    date.textContent = account.addedAt && !isNaN(parsed)
+      ? "Added: " + parsed.toLocaleString()
       : "Saved account";
-
     info.append(email, date);
 
     const remove = document.createElement("button");
@@ -175,34 +163,25 @@ $("clientId").value = localStorage.getItem(CLIENT_KEY) || "";
 
 $("saveClient").onclick = () => {
   const id = $("clientId").value.trim();
-
   if (id && !id.endsWith(".apps.googleusercontent.com")) {
     $("accountStatus").textContent = "Client ID format check karo.";
     return;
   }
-
   if (id) localStorage.setItem(CLIENT_KEY, id);
   else localStorage.removeItem(CLIENT_KEY);
-
-  $("accountStatus").textContent = id
-    ? "Client ID save ho gayi."
-    : "Client ID clear ho gayi.";
+  $("accountStatus").textContent = id ? "Client ID save ho gayi." : "Client ID clear ho gayi.";
 };
 
 $("addAccount").onclick = () => {
-  const clientId =
-    $("clientId").value.trim() ||
-    localStorage.getItem(CLIENT_KEY) || "";
+  const clientId = $("clientId").value.trim() || localStorage.getItem(CLIENT_KEY) || "";
 
   if (!clientId) {
-    $("accountStatus").textContent =
-      "Client ID daalo aur Save Client ID dabao.";
+    $("accountStatus").textContent = "Pehle Client ID enter karke Save Client ID dabao.";
     return;
   }
 
   if (!window.google?.accounts?.oauth2) {
-    $("accountStatus").textContent =
-      "Google sign-in load nahi hua. Internet check karke refresh karo.";
+    $("accountStatus").textContent = "Google sign-in load nahi hua. Internet check karke refresh karo.";
     return;
   }
 
@@ -212,57 +191,39 @@ $("addAccount").onclick = () => {
       scope: "openid email",
       callback: async response => {
         if (response.error || !response.access_token) {
-          $("accountStatus").textContent =
-            "Sign-in fail hua. OAuth settings check karo.";
+          $("accountStatus").textContent = "Sign-in fail hua. OAuth settings check karo.";
           return;
         }
 
         try {
-          const responseProfile = await fetch(
-            "https://www.googleapis.com/oauth2/v3/userinfo",
-            {
-              headers: {
-                Authorization: "Bearer " + response.access_token
-              }
-            }
-          );
+          const result = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: {Authorization: "Bearer " + response.access_token}
+          });
+          if (!result.ok) throw new Error("Profile request failed");
 
-          if (!responseProfile.ok) throw new Error("Profile request failed");
-
-          const profile = await responseProfile.json();
-
+          const profile = await result.json();
           if (!profile.email || !profile.email_verified) {
             $("accountStatus").textContent = "Verified email nahi mil paya.";
             return;
           }
 
           const list = getAccounts();
-          const alreadyExists = list.some(account =>
-            account.email.toLowerCase() === profile.email.toLowerCase()
-          );
-
-          if (!alreadyExists) {
-            list.push({
-              email: profile.email,
-              addedAt: new Date().toISOString()
-            });
+          if (!list.some(a => a.email.toLowerCase() === profile.email.toLowerCase())) {
+            list.push({email: profile.email, addedAt: new Date().toISOString()});
             localStorage.setItem(ACCOUNT_KEY, JSON.stringify(list));
           }
 
           renderAccounts();
-          $("accountStatus").textContent =
-            profile.email + " dashboard mein available hai.";
+          $("accountStatus").textContent = profile.email + " dashboard mein available hai.";
         } catch {
-          $("accountStatus").textContent =
-            "Email fetch nahi hua. Dobara try karo.";
+          $("accountStatus").textContent = "Email fetch nahi hua. Dobara try karo.";
         }
       }
     });
 
-    tokenClient.requestAccessToken({ prompt: "select_account" });
+    tokenClient.requestAccessToken({prompt: "select_account"});
   } catch {
-    $("accountStatus").textContent =
-      "OAuth Client ID aur authorized origin check karo.";
+    $("accountStatus").textContent = "OAuth Client ID aur authorized origin check karo.";
   }
 };
 
@@ -281,12 +242,9 @@ function getVideoId(raw) {
 
     if (host === "youtu.be") {
       id = url.pathname.split("/").filter(Boolean)[0] || null;
-    } else if (
-      ["youtube.com", "m.youtube.com", "youtube-nocookie.com"].includes(host)
-    ) {
-      if (url.pathname === "/watch") {
-        id = url.searchParams.get("v");
-      } else {
+    } else if (["youtube.com", "m.youtube.com", "youtube-nocookie.com"].includes(host)) {
+      if (url.pathname === "/watch") id = url.searchParams.get("v");
+      else {
         const match = url.pathname.match(/^\/(?:embed|shorts|live)\/([^/?]+)/);
         id = match ? match[1] : null;
       }
@@ -314,8 +272,8 @@ function makeScreen(videoId, screenNumber, autoplay, accounts) {
 
   if (accounts.length === 0) {
     const option = document.createElement("option");
-    option.textContent = "No saved account labels found";
     option.value = "";
+    option.textContent = "No saved accounts found";
     select.appendChild(option);
   } else {
     accounts.forEach(account => {
@@ -325,26 +283,24 @@ function makeScreen(videoId, screenNumber, autoplay, accounts) {
       select.appendChild(option);
     });
 
-    // Screen 1 gets account 1, Screen 2 gets account 2, etc.
-    // If there are more screens than accounts, repeat in order.
-    const assignedIndex = (screenNumber - 1) % accounts.length;
-    select.selectedIndex = assignedIndex;
+    // Screen 1 = first account, Screen 2 = second account.
+    // Extra screens repeat accounts in the same order.
+    select.selectedIndex = (screenNumber - 1) % accounts.length;
   }
 
   label.appendChild(select);
   card.appendChild(label);
 
-  const iframe = document.createElement("iframe");
-  iframe.title = "YouTube Screen " + screenNumber;
-  iframe.loading = "lazy";
-  iframe.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
-  iframe.allowFullscreen = true;
-  iframe.src =
-    "https://www.youtube-nocookie.com/embed/" +
+  const frame = document.createElement("iframe");
+  frame.title = "YouTube Screen " + screenNumber;
+  frame.loading = "lazy";
+  frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+  frame.allowFullscreen = true;
+  frame.src = "https://www.youtube-nocookie.com/embed/" +
     encodeURIComponent(videoId) +
     "?autoplay=" + (autoplay ? "1" : "0") + "&mute=1";
 
-  card.appendChild(iframe);
+  card.appendChild(frame);
   return card;
 }
 
@@ -355,32 +311,28 @@ $("createScreens").onclick = () => {
   root.replaceChildren();
 
   if (!videoId) {
-    $("playerStatus").textContent = "Sahi YouTube video URL paste karo.";
+    $("playerStatus").textContent = "Valid YouTube video URL paste karo.";
     return;
   }
 
   if (!Number.isInteger(count) || count < 1 || count > 12) {
-    $("playerStatus").textContent =
-      "Screen count 1 se 12 ke beech rakho.";
+    $("playerStatus").textContent = "Screen count 1 se 12 ke beech rakho.";
     return;
   }
 
+  // Read accounts fresh each time screens are created.
   const accounts = getAccounts();
   const fragment = document.createDocumentFragment();
 
   for (let n = 1; n <= count; n++) {
-    fragment.appendChild(
-      makeScreen(videoId, n, $("autoplay").checked, accounts)
-    );
+    fragment.appendChild(makeScreen(videoId, n, $("autoplay").checked, accounts));
   }
 
   root.appendChild(fragment);
-
-  $("playerStatus").textContent =
-    count + " screen(s) created. " +
+  $("playerStatus").textContent = count + " screen(s) created. " +
     (accounts.length
       ? accounts.length + " saved account(s) automatically assigned in order."
-      : "No saved accounts found. Google Accounts tab mein account add karo.");
+      : "No saved accounts found. Google Accounts tab mein pehle account add karo.");
 };
 
 $("clearScreens").onclick = () => {
@@ -391,7 +343,6 @@ $("clearScreens").onclick = () => {
 renderAccounts();
 })();
 </script>
-
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
 </html>
