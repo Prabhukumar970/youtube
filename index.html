@@ -1,323 +1,344 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Multi-Screen Dashboard</title>
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: #10131b;
-      color: #f5f7fb;
-      font-family: Arial, sans-serif;
-    }
-
-    header {
-      background: #1a2030;
-      padding: 22px 16px;
-      text-align: center;
-      border-bottom: 1px solid #30394b;
-    }
-
-    h1 { margin: 0 0 8px; font-size: 25px; }
-    .muted { color: #b6c0d1; font-size: 14px; }
-
-    main {
-      max-width: 1250px;
-      margin: auto;
-      padding: 20px;
-    }
-
-    .panel {
-      background: #1a2030;
-      padding: 18px;
-      border-radius: 12px;
-      border: 1px solid #30394b;
-    }
-
-    .controls {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 125px auto;
-      gap: 10px;
-    }
-
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 15px;
-    }
-
-    input, select {
-      color: white;
-      background: #101520;
-      border: 1px solid #46516a;
-      min-width: 0;
-    }
-
-    button {
-      background: #287cfa;
-      color: white;
-      border: 0;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:hover { background: #1765d6; }
-
-    .secondary { background: #3a455a; }
-    .secondary:hover { background: #4b5870; }
-
-    #message {
-      margin-top: 12px;
-      color: #f6ca77;
-      line-height: 1.5;
-    }
-
-    #screens {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-      margin-top: 18px;
-    }
-
-    .screen {
-      overflow: hidden;
-      background: #1a2030;
-      border: 1px solid #30394b;
-      border-radius: 12px;
-      min-width: 0;
-    }
-
-    .screen-info { padding: 12px; }
-    .screen-info strong { display: block; margin-bottom: 10px; }
-
-    .screen-info select { margin-bottom: 10px; }
-
-    .video {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: black;
-    }
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: 0;
-    }
-
-    .notice {
-      margin-top: 18px;
-      font-size: 13px;
-      line-height: 1.6;
-      color: #bac4d4;
-    }
-
-    @media (max-width: 700px) {
-      .controls { grid-template-columns: 1fr; }
-      #screens { grid-template-columns: 1fr; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Google Dashboard + YouTube Player</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0d1322;color:#f4f6ff;font-family:Arial,sans-serif;line-height:1.5}
+main{max-width:900px;margin:25px auto;padding:0 14px}
+.panel{background:#18233b;border:1px solid #344565;border-radius:15px;padding:20px;margin:18px 0}
+h1{font-size:30px}h2{font-size:22px}
+p,.small{color:#c5d2f2}
+input,select{width:100%;padding:11px;margin:6px 0 14px;background:#0e1729;color:white;border:1px solid #526486;border-radius:8px}
+button{padding:11px 15px;background:#a9b9ff;color:#10182b;border:0;border-radius:8px;font-weight:bold;cursor:pointer;margin:3px}
+.danger{background:#512b3b;color:#ffd9e2}
+.secondary{background:#eee;color:#111}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.account{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #344565}
+.email{font-weight:bold;overflow-wrap:anywhere}
+.small{font-size:12px}
+.screens{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:15px;margin-top:18px}
+.screen{padding:12px;background:#0e1729;border:1px solid #344565;border-radius:12px;min-width:0}
+iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:8px;display:block}
+.status{min-height:22px}
+.note{font-size:13px;padding:12px;background:#101a2d;border-radius:8px}
+</style>
 </head>
-
 <body>
-  <header>
-    <h1>▶ YouTube Multi-Screen Player</h1>
-    <div class="muted">One video link · Choose your screen count</div>
-  </header>
+<main>
+<h1>Google Account Dashboard</h1>
+<p>Google accounts manage karo aur neeche YouTube multi-screen player use karo.</p>
 
-  <main>
-    <section class="panel">
-      <div class="controls">
-        <input
-          id="videoUrl"
-          type="url"
-          placeholder="Paste YouTube video link here"
-        >
+<section class="panel">
+<h2>Add Google Account</h2>
+<label for="clientId">Google OAuth Client ID</label>
+<input id="clientId" placeholder="Your Client ID.apps.googleusercontent.com">
+<div class="row">
+<button id="saveClient">Save Client ID</button>
+<button id="addAccount">+ Add Google Account</button>
+</div>
+<p id="accountStatus" class="status" role="status"></p>
+<p class="small">Client ID Google Cloud Console se lo. Client Secret kabhi HTML mein mat daalna.</p>
+</section>
 
-        <input
-          id="screenCount"
-          type="number"
-          min="1"
-          max="12"
-          value="2"
-          aria-label="Number of screens"
-        >
+<section class="panel">
+<h2>My Accounts (<span id="count">0</span>)</h2>
+<div id="accountList"></div>
+<button id="clearAccounts" class="secondary">Clear Dashboard</button>
+<p class="small">Email list sirf is browser mein save hoti hai. Password save nahi hota.</p>
+</section>
 
-        <button id="createBtn">Create Screens</button>
-      </div>
+<section class="panel">
+<h2>YouTube Multi-Screen Player</h2>
+<label for="videoUrl">YouTube Video URL</label>
+<input id="videoUrl" type="url" placeholder="https://www.youtube.com/watch?v=XXXXXXXXXXX">
 
-      <div id="message" role="status"></div>
-    </section>
+<label for="screenCount">Screen Count (1–12)</label>
+<input id="screenCount" type="number" min="1" max="12" value="2">
 
-    <section id="screens"></section>
+<label style="display:flex;align-items:center;gap:8px;margin:8px 0 16px">
+<input id="autoplay" type="checkbox" style="width:auto;margin:0">
+Autoplay try karein (browser allow kare to)
+</label>
 
-    <p class="notice">
-      Note: Account selection here is a label only. YouTube's embedded
-      players do not let this page force a different Google login for each
-      screen. Autoplay may be blocked by your browser. Use this player for
-      normal viewing; playback and availability are controlled by YouTube.
-    </p>
-  </main>
+<div class="row">
+<button id="createScreens">Create Screens</button>
+<button id="clearScreens" class="secondary">Clear Screens</button>
+</div>
+<p id="playerStatus" class="status" role="status"></p>
+<div id="screens" class="screens"></div>
+<p class="note">Note: Dropdown mein email select karna sirf label hai. Isse har YouTube player alag Google account mein login nahi hota. Browser autoplay block kar sakta hai.</p>
+</section>
+</main>
 
-  <script>
-    const videoUrl = document.getElementById("videoUrl");
-    const screenCount = document.getElementById("screenCount");
-    const createBtn = document.getElementById("createBtn");
-    const screens = document.getElementById("screens");
-    const message = document.getElementById("message");
+<script>
+(() => {
+"use strict";
 
-    // Read account email labels saved by the account dashboard, if present.
-    function getSavedAccounts() {
-      const possibleKeys = [
-        "googleAccounts",
-        "accounts",
-        "savedAccounts"
-      ];
+const ACCOUNT_KEY = "my-google-account-email-list";
+const CLIENT_KEY = "my-google-oauth-client-id";
 
-      for (const key of possibleKeys) {
+const $ = id => document.getElementById(id);
+const accountStatus = $("accountStatus");
+const playerStatus = $("playerStatus");
+
+function getAccounts() {
+  try {
+    const list = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || "[]");
+    return Array.isArray(list)
+      ? list.filter(a => a && typeof a.email === "string" && a.email.includes("@"))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAccounts(list) {
+  localStorage.setItem(ACCOUNT_KEY, JSON.stringify(list));
+  renderAccounts();
+}
+
+function renderAccounts() {
+  const list = getAccounts();
+  $("count").textContent = list.length;
+  const root = $("accountList");
+  root.replaceChildren();
+
+  if (!list.length) {
+    const p = document.createElement("p");
+    p.textContent = "Abhi koi account save nahi hai.";
+    root.appendChild(p);
+    return;
+  }
+
+  list.forEach((account, index) => {
+    const row = document.createElement("div");
+    row.className = "account";
+
+    const info = document.createElement("div");
+    const email = document.createElement("div");
+    email.className = "email";
+    email.textContent = account.email;
+
+    const added = document.createElement("div");
+    added.className = "small";
+    const date = new Date(account.addedAt || "");
+    added.textContent = account.addedAt && !isNaN(date)
+      ? "Added: " + date.toLocaleString()
+      : "Saved account";
+
+    info.append(email, added);
+
+    const remove = document.createElement("button");
+    remove.className = "danger";
+    remove.textContent = "Remove";
+    remove.addEventListener("click", () => {
+      const updated = getAccounts();
+      updated.splice(index, 1);
+      saveAccounts(updated);
+    });
+
+    row.append(info, remove);
+    root.appendChild(row);
+  });
+}
+
+$("clientId").value = localStorage.getItem(CLIENT_KEY) || "";
+
+$("saveClient").addEventListener("click", () => {
+  const id = $("clientId").value.trim();
+
+  if (id && !id.endsWith(".apps.googleusercontent.com")) {
+    accountStatus.textContent = "Client ID ka format sahi nahi lag raha.";
+    return;
+  }
+
+  if (id) localStorage.setItem(CLIENT_KEY, id);
+  else localStorage.removeItem(CLIENT_KEY);
+
+  accountStatus.textContent = id ? "Client ID save ho gayi." : "Client ID clear kar di.";
+});
+
+$("addAccount").addEventListener("click", () => {
+  const clientId = $("clientId").value.trim() ||
+    localStorage.getItem(CLIENT_KEY) || "";
+
+  if (!clientId) {
+    accountStatus.textContent = "Pehle Client ID daalo aur Save Client ID dabao.";
+    return;
+  }
+
+  if (!window.google?.accounts?.oauth2) {
+    accountStatus.textContent = "Google sign-in load nahi hua. Internet check karke refresh karo.";
+    return;
+  }
+
+  try {
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: "openid email",
+      callback: async response => {
+        if (response.error || !response.access_token) {
+          accountStatus.textContent = "Sign-in fail hua. OAuth settings check karo.";
+          return;
+        }
+
         try {
-          const value = JSON.parse(localStorage.getItem(key) || "null");
-          if (Array.isArray(value)) {
-            const emails = value.map(item =>
-              typeof item === "string" ? item : item.email
-            ).filter(email => typeof email === "string" && email.includes("@"));
+          const result = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: { Authorization: "Bearer " + response.access_token }
+          });
 
-            if (emails.length) return [...new Set(emails)];
+          if (!result.ok) throw new Error("Profile request failed");
+
+          const profile = await result.json();
+          if (!profile.email || !profile.email_verified) {
+            accountStatus.textContent = "Verified email nahi mil paya.";
+            return;
           }
-        } catch (_) {}
-      }
 
-      return [];
-    }
+          const list = getAccounts();
+          const exists = list.some(a =>
+            a.email.toLowerCase() === profile.email.toLowerCase()
+          );
 
-    function extractVideoId(rawUrl) {
-      try {
-        const url = new URL(rawUrl.trim());
-        const host = url.hostname.toLowerCase();
-        let id = "";
-
-        if (host === "youtu.be") {
-          id = url.pathname.split("/").filter(Boolean)[0] || "";
-        } else if (
-          host === "youtube.com" ||
-          host.endsWith(".youtube.com") ||
-          host === "youtube-nocookie.com"
-        ) {
-          if (url.pathname === "/watch") {
-            id = url.searchParams.get("v") || "";
-          } else {
-            const parts = url.pathname.split("/").filter(Boolean);
-            if (["embed", "shorts", "live"].includes(parts[0])) {
-              id = parts[1] || "";
-            }
+          if (!exists) {
+            list.push({
+              email: profile.email,
+              addedAt: new Date().toISOString()
+            });
+            saveAccounts(list);
           }
+
+          accountStatus.textContent = profile.email + " dashboard mein hai.";
+        } catch {
+          accountStatus.textContent = "Email fetch nahi hua. Dobara try karo.";
         }
+      }
+    });
 
-        return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
-      } catch (_) {
-        return null;
+    tokenClient.requestAccessToken({ prompt: "select_account" });
+  } catch {
+    accountStatus.textContent = "OAuth Client ID aur authorized origin check karo.";
+  }
+});
+
+$("clearAccounts").addEventListener("click", () => {
+  if (!confirm("Kya sab saved email addresses clear karne hain?")) return;
+  localStorage.removeItem(ACCOUNT_KEY);
+  renderAccounts();
+  accountStatus.textContent = "Dashboard clear ho gaya.";
+});
+
+function getVideoId(raw) {
+  try {
+    const url = new URL(raw.trim());
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+    let id = null;
+
+    if (host === "youtu.be") {
+      id = url.pathname.split("/").filter(Boolean)[0] || null;
+    } else if (
+      ["youtube.com", "m.youtube.com", "youtube-nocookie.com"].includes(host)
+    ) {
+      if (url.pathname === "/watch") {
+        id = url.searchParams.get("v");
+      } else {
+        const match = url.pathname.match(/^\/(?:embed|shorts|live)\/([^/?]+)/);
+        id = match ? match[1] : null;
       }
     }
 
-    function makeAccountSelect(index, accounts) {
-      const select = document.createElement("select");
-      select.setAttribute("aria-label", `Account label for screen ${index}`);
+    return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
 
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = accounts.length
-        ? "Choose account label"
-        : "No saved account labels found";
-      select.appendChild(placeholder);
+function makeScreen(videoId, number, autoplay, accounts) {
+  const card = document.createElement("div");
+  card.className = "screen";
 
-      accounts.forEach(email => {
-        const option = document.createElement("option");
-        option.value = email;
-        option.textContent = email;
-        select.appendChild(option);
-      });
+  const heading = document.createElement("h3");
+  heading.textContent = "Screen " + number;
+  card.appendChild(heading);
 
-      const saved = localStorage.getItem(`multiScreenAccount${index}`);
-      if (saved && accounts.includes(saved)) select.value = saved;
+  const label = document.createElement("label");
+  label.textContent = "Associated Google account";
 
-      select.addEventListener("change", () => {
-        if (select.value) {
-          localStorage.setItem(`multiScreenAccount${index}`, select.value);
-        } else {
-          localStorage.removeItem(`multiScreenAccount${index}`);
-        }
-      });
+  const select = document.createElement("select");
+  const first = document.createElement("option");
+  first.value = "";
+  first.textContent = accounts.length ? "Account select karo" : "Pehle account add karo";
+  select.appendChild(first);
 
-      return select;
-    }
+  accounts.forEach(account => {
+    const option = document.createElement("option");
+    option.value = account.email;
+    option.textContent = account.email;
+    select.appendChild(option);
+  });
 
-    function createScreens() {
-      const id = extractVideoId(videoUrl.value);
-      const count = Number(screenCount.value);
+  label.appendChild(select);
+  card.appendChild(label);
 
-      screens.replaceChildren();
-      message.textContent = "";
+  const frame = document.createElement("iframe");
+  frame.title = "YouTube Screen " + number;
+  frame.loading = "lazy";
+  frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+  frame.allowFullscreen = true;
+  frame.src = "https://www.youtube-nocookie.com/embed/" +
+    encodeURIComponent(videoId) +
+    "?autoplay=" + (autoplay ? "1" : "0") + "&mute=1";
+  card.appendChild(frame);
 
-      if (!id) {
-        message.textContent = "Please paste a valid YouTube video link.";
-        return;
-      }
+  const note = document.createElement("p");
+  note.className = "small";
+  note.textContent = "Email selection sirf label hai; player account mein login nahi hota.";
+  card.appendChild(note);
 
-      if (!Number.isInteger(count) || count < 1 || count > 12) {
-        message.textContent = "Screen count must be between 1 and 12.";
-        return;
-      }
+  return card;
+}
 
-      const accounts = getSavedAccounts();
+$("createScreens").addEventListener("click", () => {
+  const videoId = getVideoId($("videoUrl").value);
+  const count = Number($("screenCount").value);
+  const autoplay = $("autoplay").checked;
+  const root = $("screens");
+  root.replaceChildren();
 
-      const columns = count === 1 ? 1 : count <= 4 ? 2 : 3;
-      screens.style.gridTemplateColumns =
-        `repeat(${columns}, minmax(0, 1fr))`;
+  if (!videoId) {
+    playerStatus.textContent = "Valid YouTube video URL paste karo.";
+    return;
+  }
 
-      for (let i = 1; i <= count; i++) {
-        const card = document.createElement("article");
-        card.className = "screen";
+  if (!Number.isInteger(count) || count < 1 || count > 12) {
+    playerStatus.textContent = "Screen count 1 se 12 ke beech rakho.";
+    return;
+  }
 
-        const info = document.createElement("div");
-        info.className = "screen-info";
+  const accounts = getAccounts();
+  const fragment = document.createDocumentFragment();
 
-        const heading = document.createElement("strong");
-        heading.textContent = `Screen ${i}`;
+  for (let i = 1; i <= count; i++) {
+    fragment.appendChild(makeScreen(videoId, i, autoplay, accounts));
+  }
 
-        const accountSelect = makeAccountSelect(i, accounts);
+  root.appendChild(fragment);
+  playerStatus.textContent = count + " screen(s) ban gayi.";
+});
 
-        const video = document.createElement("div");
-        video.className = "video";
+$("clearScreens").addEventListener("click", () => {
+  $("screens").replaceChildren();
+  playerStatus.textContent = "Screens clear kar di gayi.";
+});
 
-        const iframe = document.createElement("iframe");
-        iframe.title = `YouTube video screen ${i}`;
-        iframe.src =
-          `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1`;
-        iframe.allow =
-          "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share";
-        iframe.allowFullscreen = true;
-        iframe.referrerPolicy = "strict-origin-when-cross-origin";
+renderAccounts();
+})();
+</script>
 
-        video.appendChild(iframe);
-        info.append(heading, accountSelect);
-        card.append(info, video);
-        screens.appendChild(card);
-      }
-
-      message.textContent =
-        `${count} screen(s) created. Autoplay depends on browser settings.`;
-
-      if (!accounts.length) {
-        message.textContent +=
-          " No saved account list was found; account labels are unavailable.";
-      }
-    }
-
-    createBtn.addEventListener("click", createScreens);
-  </script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
 </html>
