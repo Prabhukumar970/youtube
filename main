@@ -1,177 +1,226 @@
 
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Player Dashboard</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      padding: 22px;
-      font-family: Arial, sans-serif;
-      background: #101114;
-      color: #fff;
-    }
-    h1 { font-size: 25px; }
-    .panel {
-      background: #1b1d23;
-      border: 1px solid #30323a;
-      padding: 18px;
-      border-radius: 12px;
-      margin-bottom: 18px;
-    }
-    input, button {
-      padding: 12px;
-      border-radius: 7px;
-      border: 1px solid #41434c;
-      margin: 5px 0;
-      font-size: 15px;
-    }
-    input {
-      background: #111217;
-      color: white;
-      width: 100%;
-    }
-    button {
-      background: #d92736;
-      color: white;
-      border: 0;
-      cursor: pointer;
-    }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
-      gap: 12px;
-    }
-    .stat {
-      background: #272932;
-      padding: 15px;
-      border-radius: 9px;
-    }
-    .number { font-size: 27px; font-weight: bold; }
-    #screens {
-      display: grid;
-      grid-template-columns: repeat(auto-fit,minmax(270px,1fr));
-      gap: 12px;
-    }
-    iframe {
-      width: 100%;
-      aspect-ratio: 16/9;
-      border: 0;
-      border-radius: 8px;
-    }
-    .muted { color: #a6a8b3; font-size: 13px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Google Account Dashboard</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;padding:25px;
+  font-family:Arial,sans-serif;
+  background:#0d1324;color:#f5f7ff
+}
+main{max-width:850px;margin:auto}
+h1{font-size:30px}
+p{color:#b8c2d9;line-height:1.5}
+.card{
+  background:#17213a;border:1px solid #30405f;
+  padding:22px;border-radius:16px;margin:18px 0
+}
+button{
+  cursor:pointer;border:0;border-radius:9px;
+  padding:12px 16px;font-weight:bold
+}
+.add{background:#a8b6ff;color:#11172b}
+.remove{background:#422532;color:#ffc0c7}
+.account{
+  display:flex;align-items:center;gap:12px;
+  justify-content:space-between;flex-wrap:wrap;
+  padding:14px 0;border-bottom:1px solid #30405f
+}
+.email{overflow-wrap:anywhere;font-weight:bold}
+.small{font-size:12px;color:#b8c2d9;margin-top:5px}
+#status{color:#b8c7ff}
+</style>
 </head>
 <body>
-  <h1>YouTube Dashboard</h1>
-  <p class="muted">Video testing aur multi-screen preview</p>
+<main>
+  <h1>Google Account Dashboard</h1>
+  <p>Apne Google accounts add karo aur verified email addresses dekho.</p>
 
-  <div class="stats">
-    <div class="stat">
-      <div class="muted">Account status</div>
-      <div class="number">Not connected</div>
-      <p class="muted">Google OAuth setup required</p>
-    </div>
-    <div class="stat">
-      <div class="muted">Video screens</div>
-      <div class="number" id="screenTotal">0</div>
-    </div>
-  </div>
+  <section class="card">
+    <h2>Add Account</h2>
+    <p>Google ke official sign-in window se account select karo.</p>
+    <button class="add" id="add">+ Add Google Account</button>
+    <p id="status">Pehle Google Client ID configure karein.</p>
+  </section>
 
-  <div class="panel">
-    <h2>YouTube Video Player</h2>
-    <label for="videoUrl">YouTube video link</label>
-    <input id="videoUrl"
-      placeholder="https://www.youtube.com/watch?v=...">
+  <section class="card">
+    <h2>My Accounts (<span id="count">0</span>)</h2>
+    <div id="accounts"></div>
+    <p id="empty">Abhi koi account add nahi hua.</p>
+    <button id="clear">Clear Dashboard</button>
+  </section>
+  <p class="small">
+    Email list sirf is browser mein save hoti hai. Password aur access
+    token save nahi hote. Remove karne se Google account sign out nahi hota.
+  </p>
+</main>
 
-    <label for="screenCount">Screens (1–20)</label>
-    <input id="screenCount" type="number"
-      min="1" max="20" value="1">
+<script>
+const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
+const KEY = "my-google-account-email-list";
 
-    <button onclick="createPlayers()">Create Screens</button>
-    <button onclick="stopPlayers()">Stop All</button>
-    <div id="message" class="muted"></div>
-  </div>
+const addBtn = document.getElementById("add");
+const statusBox = document.getElementById("status");
+const accountsBox = document.getElementById("accounts");
+const countBox = document.getElementById("count");
+const emptyBox = document.getElementById("empty");
 
-  <div id="screens"></div>
+let accounts = [];
+let tokenClient = null;
 
-  <script>
-    function extractVideoId(value) {
+try {
+  accounts = JSON.parse(localStorage.getItem(KEY) || "[]");
+  if (!Array.isArray(accounts)) accounts = [];
+} catch {
+  accounts = [];
+}
+
+function status(message) {
+  statusBox.textContent = message;
+}
+
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(accounts));
+  render();
+}
+
+function render() {
+  accountsBox.replaceChildren();
+  countBox.textContent = accounts.length;
+  emptyBox.hidden = accounts.length > 0;
+
+  accounts.forEach((account, index) => {
+    const row = document.createElement("div");
+    row.className = "account";
+
+    const info = document.createElement("div");
+    const email = document.createElement("div");
+    email.className = "email";
+    email.textContent = account.email;
+
+    const date = document.createElement("div");
+    date.className = "small";
+    date.textContent = "Added: " +
+      new Date(account.addedAt).toLocaleString();
+
+    info.append(email, date);
+
+    const remove = document.createElement("button");
+    remove.className = "remove";
+    remove.textContent = "Remove";
+    remove.onclick = () => {
+      accounts.splice(index, 1);
+      save();
+      status("Email dashboard se remove kar diya.");
+    };
+
+    row.append(info, remove);
+    accountsBox.append(row);
+  });
+}
+
+function setupGoogle() {
+  if (CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID") {
+    status("app.js mein apni Google Client ID daalein.");
+    return;
+  }
+
+  if (!window.google?.accounts?.oauth2) {
+    status("Google sign-in load nahi hua. Page refresh karke try karein.");
+    return;
+  }
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: "openid email",
+    callback: async (response) => {
+      if (response.error || !response.access_token) {
+        status("Sign-in complete nahi hua. Dobara try karein.");
+        return;
+      }
+
       try {
-        const url = new URL(value);
-        let id = null;
-
-        if (url.hostname === "youtu.be") {
-          id = url.pathname.slice(1);
-        } else if (
-          ["youtube.com", "www.youtube.com",
-           "m.youtube.com", "youtube-nocookie.com",
-           "www.youtube-nocookie.com"].includes(url.hostname)
-        ) {
-          if (url.pathname === "/watch") {
-            id = url.searchParams.get("v");
-          } else {
-            const match = url.pathname.match(
-              /^\/(?:embed|shorts)\/([^/]+)/
-            );
-            id = match ? match[1] : null;
+        const result = await fetch(
+          "https://openidconnect.googleapis.com/v1/userinfo",
+          {
+            headers: {
+              Authorization: "Bearer " + response.access_token
+            }
           }
+        );
+
+        if (!result.ok) throw new Error("Email verify nahi ho paya.");
+
+        const profile = await result.json();
+
+        if (!profile.email || profile.email_verified !== true) {
+          throw new Error("Verified email available nahi hai.");
         }
 
-        return id && /^[\w-]{11}$/.test(id) ? id : null;
-      } catch {
-        return null;
+        const exists = accounts.some(
+          a => a.email.toLowerCase() === profile.email.toLowerCase()
+        );
+
+        if (exists) {
+          status("Ye email pehle se dashboard mein hai.");
+        } else {
+          accounts.push({
+            email: profile.email,
+            addedAt: new Date().toISOString()
+          });
+          save();
+          status("Account add ho gaya: " + profile.email);
+        }
+      } catch (error) {
+        status(error.message || "Kuch galat hua.");
+      } finally {
+        google.accounts.oauth2.revoke(
+          response.access_token,
+          () => {}
+        );
       }
+    },
+    error_callback: () => {
+      status("Sign-in popup nahi khula. Browser popups allow karein.");
     }
+  });
+}
 
-    function createPlayers() {
-      const id = extractVideoId(
-        document.getElementById("videoUrl").value.trim()
-      );
-      const count = Number(
-        document.getElementById("screenCount").value
-      );
-      const screens = document.getElementById("screens");
-      const message = document.getElementById("message");
+addBtn.addEventListener("click", () => {
+  if (CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID") {
+    status("Pehle code mein Google Client ID set karein.");
+    return;
+  }
 
-      if (!id) {
-        message.textContent = "Valid YouTube link paste karo.";
-        return;
-      }
+  if (!window.google?.accounts?.oauth2) {
+    status("Google sign-in load ho raha hai. Thodi der baad try karein.");
+    return;
+  }
 
-      if (!Number.isInteger(count) || count < 1 || count > 20) {
-        message.textContent = "Screen count 1 se 20 ke beech rakho.";
-        return;
-      }
+  if (!tokenClient) setupGoogle();
 
-      screens.replaceChildren();
+  if (tokenClient) {
+    tokenClient.requestAccessToken({
+      prompt: "select_account"
+    });
+  }
+});
 
-      for (let i = 0; i < count; i++) {
-        const frame = document.createElement("iframe");
-        frame.title = "Preview screen " + (i + 1);
-        frame.src =
-          "https://www.youtube-nocookie.com/embed/" +
-          id + "?playsinline=1";
-        frame.allow =
-          "encrypted-media; picture-in-picture";
-        frame.allowFullscreen = true;
-        screens.appendChild(frame);
-      }
+document.getElementById("clear").addEventListener("click", () => {
+  if (confirm("Dashboard ki saari email entries clear karein?")) {
+    accounts = [];
+    save();
+    status("Dashboard clear ho gaya.");
+  }
+});
 
-      document.getElementById("screenTotal").textContent = count;
-      message.textContent =
-        count + " video player(s) created successfully.";
-    }
-
-    function stopPlayers() {
-      document.getElementById("screens").replaceChildren();
-      document.getElementById("screenTotal").textContent = "0";
-      document.getElementById("message").textContent =
-        "All players stopped.";
-    }
-  </script>
+render();
+window.addEventListener("load", setupGoogle);
+</script>
 </body>
 </html>
