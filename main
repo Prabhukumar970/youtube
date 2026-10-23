@@ -1,183 +1,176 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Video Player</title>
-
+  <title>YouTube Player Dashboard</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 25px;
+      padding: 22px;
       font-family: Arial, sans-serif;
-      background: #f2f4f8;
-      color: #222;
+      background: #101114;
+      color: #fff;
     }
-
-    .container {
-      max-width: 700px;
-      margin: 30px auto;
-      padding: 25px;
-      background: white;
-      border-radius: 14px;
-      box-shadow: 0 5px 25px #0001;
+    h1 { font-size: 25px; }
+    .panel {
+      background: #1b1d23;
+      border: 1px solid #30323a;
+      padding: 18px;
+      border-radius: 12px;
+      margin-bottom: 18px;
     }
-
-    h1 {
-      text-align: center;
-      color: #e62117;
-    }
-
-    label {
-      display: block;
-      margin: 18px 0 8px;
-      font-weight: bold;
-    }
-
     input, button {
-      width: 100%;
       padding: 12px;
-      font-size: 16px;
       border-radius: 7px;
+      border: 1px solid #41434c;
+      margin: 5px 0;
+      font-size: 15px;
     }
-
     input {
-      border: 1px solid #ccc;
-    }
-
-    button {
-      margin-top: 15px;
-      border: none;
-      background: #e62117;
+      background: #111217;
       color: white;
+      width: 100%;
+    }
+    button {
+      background: #d92736;
+      color: white;
+      border: 0;
       cursor: pointer;
     }
-
-    button:hover {
-      background: #bd1b13;
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+      gap: 12px;
     }
-
-    #player {
-      margin-top: 20px;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #111;
+    .stat {
+      background: #272932;
+      padding: 15px;
+      border-radius: 9px;
     }
-
+    .number { font-size: 27px; font-weight: bold; }
+    #screens {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(270px,1fr));
+      gap: 12px;
+    }
     iframe {
       width: 100%;
-      height: 100%;
+      aspect-ratio: 16/9;
       border: 0;
+      border-radius: 8px;
     }
-
-    .note {
-      margin-top: 18px;
-      color: #666;
-      font-size: 14px;
-      line-height: 1.6;
-    }
+    .muted { color: #a6a8b3; font-size: 13px; }
   </style>
 </head>
-
 <body>
-  <div class="container">
-    <h1>YouTube Video Player</h1>
+  <h1>YouTube Dashboard</h1>
+  <p class="muted">Video testing aur multi-screen preview</p>
 
-    <label for="videoUrl">YouTube Video Link</label>
-    <input
-      id="videoUrl"
-      type="url"
-      placeholder="https://www.youtube.com/watch?v=..."
-    >
-
-    <label for="repeatCount">Repeat Count (for your plan)</label>
-    <input
-      id="repeatCount"
-      type="number"
-      min="1"
-      max="100"
-      value="5"
-    >
-
-    <button onclick="loadVideo()">Load Video</button>
-
-    <div id="player"></div>
-
-    <p id="status">Paste a YouTube link to begin.</p>
-
-    <p class="note">
-      This player is for viewing and testing. Repeat count is a target
-      only; it does not automatically replay videos or verify views.
-      Start playback using the YouTube player controls.
-    </p>
+  <div class="stats">
+    <div class="stat">
+      <div class="muted">Account status</div>
+      <div class="number">Not connected</div>
+      <p class="muted">Google OAuth setup required</p>
+    </div>
+    <div class="stat">
+      <div class="muted">Video screens</div>
+      <div class="number" id="screenTotal">0</div>
+    </div>
   </div>
 
+  <div class="panel">
+    <h2>YouTube Video Player</h2>
+    <label for="videoUrl">YouTube video link</label>
+    <input id="videoUrl"
+      placeholder="https://www.youtube.com/watch?v=...">
+
+    <label for="screenCount">Screens (1–20)</label>
+    <input id="screenCount" type="number"
+      min="1" max="20" value="1">
+
+    <button onclick="createPlayers()">Create Screens</button>
+    <button onclick="stopPlayers()">Stop All</button>
+    <div id="message" class="muted"></div>
+  </div>
+
+  <div id="screens"></div>
+
   <script>
-    function loadVideo() {
-      const url = document.getElementById("videoUrl").value.trim();
-      const count = Number(
-        document.getElementById("repeatCount").value
-      );
-
-      let videoId = "";
-
+    function extractVideoId(value) {
       try {
-        const parsed = new URL(url);
+        const url = new URL(value);
+        let id = null;
 
-        if (parsed.hostname === "youtu.be") {
-          videoId = parsed.pathname.slice(1);
+        if (url.hostname === "youtu.be") {
+          id = url.pathname.slice(1);
         } else if (
-          parsed.hostname === "youtube.com" ||
-          parsed.hostname === "www.youtube.com" ||
-          parsed.hostname === "m.youtube.com"
+          ["youtube.com", "www.youtube.com",
+           "m.youtube.com", "youtube-nocookie.com",
+           "www.youtube-nocookie.com"].includes(url.hostname)
         ) {
-          if (parsed.pathname === "/watch") {
-            videoId = parsed.searchParams.get("v") || "";
+          if (url.pathname === "/watch") {
+            id = url.searchParams.get("v");
           } else {
-            const parts = parsed.pathname.split("/");
-            if (["embed", "shorts"].includes(parts[1])) {
-              videoId = parts[2] || "";
-            }
+            const match = url.pathname.match(
+              /^\/(?:embed|shorts)\/([^/]+)/
+            );
+            id = match ? match[1] : null;
           }
         }
-      } catch (error) {
-        document.getElementById("status").textContent =
-          "Please enter a valid YouTube URL.";
+
+        return id && /^[\w-]{11}$/.test(id) ? id : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function createPlayers() {
+      const id = extractVideoId(
+        document.getElementById("videoUrl").value.trim()
+      );
+      const count = Number(
+        document.getElementById("screenCount").value
+      );
+      const screens = document.getElementById("screens");
+      const message = document.getElementById("message");
+
+      if (!id) {
+        message.textContent = "Valid YouTube link paste karo.";
         return;
       }
 
-      if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-        document.getElementById("status").textContent =
-          "Invalid YouTube video link.";
+      if (!Number.isInteger(count) || count < 1 || count > 20) {
+        message.textContent = "Screen count 1 se 20 ke beech rakho.";
         return;
       }
 
-      if (!Number.isInteger(count) || count < 1 || count > 100) {
-        document.getElementById("status").textContent =
-          "Choose a count between 1 and 100.";
-        return;
+      screens.replaceChildren();
+
+      for (let i = 0; i < count; i++) {
+        const frame = document.createElement("iframe");
+        frame.title = "Preview screen " + (i + 1);
+        frame.src =
+          "https://www.youtube-nocookie.com/embed/" +
+          id + "?playsinline=1";
+        frame.allow =
+          "encrypted-media; picture-in-picture";
+        frame.allowFullscreen = true;
+        screens.appendChild(frame);
       }
 
-      document.getElementById("player").innerHTML = `
-        <iframe
-          src="https://www.youtube-nocookie.com/embed/${videoId}"
-          title="YouTube video player"
-          allow="accelerometer; autoplay; clipboard-write;
-          encrypted-media; gyroscope; picture-in-picture;
-          web-share"
-          referrerpolicy="strict-origin-when-cross-origin"
-          allowfullscreen>
-        </iframe>
-      `;
+      document.getElementById("screenTotal").textContent = count;
+      message.textContent =
+        count + " video player(s) created successfully.";
+    }
 
-      document.getElementById("status").textContent =
-        "Video loaded. Your selected repeat target is " +
-        count + ".";
+    function stopPlayers() {
+      document.getElementById("screens").replaceChildren();
+      document.getElementById("screenTotal").textContent = "0";
+      document.getElementById("message").textContent =
+        "All players stopped.";
     }
   </script>
 </body>
